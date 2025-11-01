@@ -66,38 +66,31 @@ class HomeScreen extends StatelessWidget {
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const Spacer(),
-                  if (appState.clientId != null)
-                    ElevatedButton.icon(
-                      onPressed: () async {
-                        if (isMonitoring) {
-                          await appState.stopMonitoring();
-                        } else {
-                          try {
-                            await appState.startMonitoring();
-                          } catch (e) {
-                            if (context.mounted) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('Error: $e')),
-                              );
-                            }
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      if (isMonitoring) {
+                        await appState.stopMonitoring();
+                      } else {
+                        try {
+                          await appState.startMonitoring();
+                        } catch (e) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Error: $e')),
+                            );
                           }
                         }
-                      },
-                      icon: Icon(isMonitoring ? Icons.stop : Icons.play_arrow),
-                      label: Text(isMonitoring ? 'Stop' : 'Start'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isMonitoring
-                            ? Colors.red
-                            : Colors.green,
-                        foregroundColor: Colors.white,
-                      ),
-                    )
-                  else
-                    ElevatedButton.icon(
-                      onPressed: () => _showSettings(context),
-                      icon: const Icon(Icons.settings),
-                      label: const Text('Configure'),
+                      }
+                    },
+                    icon: Icon(isMonitoring ? Icons.stop : Icons.play_arrow),
+                    label: Text(isMonitoring ? 'Stop' : 'Start'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isMonitoring
+                          ? Colors.red
+                          : Colors.green,
+                      foregroundColor: Colors.white,
                     ),
+                  ),
                 ],
               ),
               if (currentGame != null) ...[

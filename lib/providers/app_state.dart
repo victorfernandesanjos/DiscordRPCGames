@@ -7,6 +7,9 @@ import '../services/storage_service.dart';
 
 /// Main application state manager
 class AppState extends ChangeNotifier {
+  // Default Discord Application ID (fallback if user doesn't provide their own)
+  static const String _defaultClientId = '1434273144645881876';
+  
   final StorageService _storage = StorageService();
   final DiscordRPCService _discordRPC = DiscordRPCService();
   final ProcessMonitor _processMonitor = ProcessMonitor();
@@ -22,6 +25,7 @@ class AppState extends ChangeNotifier {
   // Getters
   List<GameProfile> get games => List.unmodifiable(_games);
   String? get clientId => _clientId;
+  String get effectiveClientId => (_clientId == null || _clientId!.isEmpty) ? _defaultClientId : _clientId!;
   bool get isMonitoring => _isMonitoring;
   bool get autoStart => _autoStart;
   GameProfile? get currentGame => _currentGame;
@@ -32,19 +36,24 @@ class AppState extends ChangeNotifier {
   Future<void> initialize() async {
     await _storage.initialize();
     _games = await _storage.loadGames();
-    _clientId = await _storage.loadClientId();
+    final loadedClientId = await _storage.loadClientId();
+    
+    // Treat empty string as null (use default)
+    _clientId = (loadedClientId == null || loadedClientId.isEmpty) ? null : loadedClientId;
+    
     _autoStart = await _storage.loadAutoStart();
 
-    if (_clientId != null && _autoStart) {
+    // Auto-start monitoring if enabled (uses default client ID if none set)
+    if (_autoStart) {
       await startMonitoring();
     }
 
     notifyListeners();
   }
 
-  /// Set Discord client ID
+  /// Set Discord client ID (empty string will use default)
   Future<void> setClientId(String clientId) async {
-    _clientId = clientId;
+    _clientId = clientId.isEmpty ? null : clientId;
     await _storage.saveClientId(clientId);
 
     // Reinitialize Discord if monitoring
@@ -108,12 +117,11 @@ class AppState extends ChangeNotifier {
 
   /// Start monitoring processes
   Future<void> startMonitoring() async {
-    if (_clientId == null || _clientId!.isEmpty) {
-      throw Exception('Discord Client ID not set');
-    }
+    // Use user's client ID if set, otherwise use default
+    final clientIdToUse = effectiveClientId;
 
     // Initialize Discord RPC
-    final success = await _discordRPC.initialize(_clientId!);
+    final success = await _discordRPC.initialize(clientIdToUse);
     if (!success) {
       throw Exception('Failed to connect to Discord');
     }

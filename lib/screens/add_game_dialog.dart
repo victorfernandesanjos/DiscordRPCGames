@@ -19,7 +19,6 @@ class _AddGameDialogState extends State<AddGameDialog> {
   late TextEditingController _iconUrlController;
   late TextEditingController _detailsController;
   late TextEditingController _stateController;
-  late TextEditingController _processSearchController;
 
   bool _showProcessPicker = false;
   final FocusNode _processFieldFocus = FocusNode();
@@ -42,8 +41,13 @@ class _AddGameDialogState extends State<AddGameDialog> {
     _stateController = TextEditingController(
       text: widget.gameToEdit?.state ?? '',
     );
-    _processSearchController = TextEditingController();
-    _processSearchController.addListener(_filterProcesses);
+    
+    // Listen to process name changes to filter the process list
+    _processNameController.addListener(() {
+      if (_showProcessPicker) {
+        setState(() {});
+      }
+    });
   }
 
   @override
@@ -53,17 +57,12 @@ class _AddGameDialogState extends State<AddGameDialog> {
     _iconUrlController.dispose();
     _detailsController.dispose();
     _stateController.dispose();
-    _processSearchController.dispose();
     _processFieldFocus.dispose();
     super.dispose();
   }
 
-  void _filterProcesses() {
-    setState(() {});
-  }
-
   List<String> _getFilteredProcesses(Set<String> allProcesses) {
-    final searchTerm = _processSearchController.text.toLowerCase();
+    final searchTerm = _processNameController.text.toLowerCase();
     if (searchTerm.isEmpty) {
       return allProcesses.toList()..sort();
     }
@@ -173,7 +172,9 @@ class _AddGameDialogState extends State<AddGameDialog> {
               decoration: InputDecoration(
                 labelText: 'Process Name *',
                 hintText: 'e.g., javaw.exe',
-                helperText: 'The exact process name (including .exe)',
+                helperText: hasProcesses 
+                    ? 'Type to filter running processes, or enter manually'
+                    : 'The exact process name (including .exe)',
                 border: const OutlineInputBorder(),
                 suffixIcon: hasProcesses
                     ? IconButton(
@@ -213,88 +214,55 @@ class _AddGameDialogState extends State<AddGameDialog> {
                   border: Border.all(color: Colors.grey.shade300),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Column(
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.all(8.0),
-                      child: TextField(
-                        controller: _processSearchController,
-                        decoration: InputDecoration(
-                          hintText: 'Search processes...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          suffixIcon: _processSearchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 20),
-                                  onPressed: () {
-                                    _processSearchController.clear();
-                                  },
+                child: Builder(
+                  builder: (context) {
+                    final filteredProcesses =
+                        _getFilteredProcesses(runningProcesses);
+
+                    if (filteredProcesses.isEmpty) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16.0),
+                          child: Text(
+                            'No processes match your search',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: filteredProcesses.length,
+                      itemBuilder: (context, index) {
+                        final process = filteredProcesses[index];
+                        final isSelected =
+                            _processNameController.text == process;
+
+                        return ListTile(
+                          dense: true,
+                          selected: isSelected,
+                          title: Text(
+                            process,
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          trailing: isSelected
+                              ? const Icon(
+                                  Icons.check,
+                                  color: Colors.green,
+                                  size: 20,
                                 )
                               : null,
-                          border: const OutlineInputBorder(),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          isDense: true,
-                        ),
-                        autofocus: true,
-                      ),
-                    ),
-                    const Divider(height: 1),
-                    Expanded(
-                      child: Builder(
-                        builder: (context) {
-                          final filteredProcesses =
-                              _getFilteredProcesses(runningProcesses);
-
-                          if (filteredProcesses.isEmpty) {
-                            return const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: Text(
-                                  'No processes match your search',
-                                  style: TextStyle(color: Colors.grey),
-                                ),
-                              ),
-                            );
-                          }
-
-                          return ListView.builder(
-                            itemCount: filteredProcesses.length,
-                            itemBuilder: (context, index) {
-                              final process = filteredProcesses[index];
-                              final isSelected =
-                                  _processNameController.text == process;
-
-                              return ListTile(
-                                dense: true,
-                                selected: isSelected,
-                                title: Text(
-                                  process,
-                                  style: const TextStyle(fontSize: 13),
-                                ),
-                                trailing: isSelected
-                                    ? const Icon(
-                                        Icons.check,
-                                        color: Colors.green,
-                                        size: 20,
-                                      )
-                                    : null,
-                                onTap: () {
-                                  setState(() {
-                                    _processNameController.text = process;
-                                    _showProcessPicker = false;
-                                    _processSearchController.clear();
-                                  });
-                                  _processFieldFocus.unfocus();
-                                },
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                          onTap: () {
+                            setState(() {
+                              _processNameController.text = process;
+                              _showProcessPicker = false;
+                            });
+                            _processFieldFocus.unfocus();
+                          },
+                        );
+                      },
+                    );
+                  },
                 ),
               ),
             ] else if (!hasProcesses) ...[

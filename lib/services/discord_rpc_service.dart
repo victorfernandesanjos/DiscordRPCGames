@@ -15,6 +15,11 @@ class DiscordRPCService {
   bool _isConnected = false;
   GameProfile? _currentGame;
   DateTime? _startTime;
+  bool _isReconnecting = false;
+  Timer? _reconnectTimer;
+  int _reconnectAttempts = 0;
+  static const int _maxReconnectAttempts = 3;
+  static const Duration _reconnectDelay = Duration(seconds: 2);
 
   bool get isInitialized => _isInitialized;
   bool get isConnected => _isConnected;
@@ -53,9 +58,17 @@ class DiscordRPCService {
 
             // Send handshake
             await _sendHandshake();
+            
+            // Small delay to let handshake process
+            await Future.delayed(const Duration(milliseconds: 100));
 
             _isInitialized = true;
             _isConnected = true;
+            
+            // Only reset reconnect attempts if we're not in a reconnect loop
+            if (!_isReconnecting) {
+              _reconnectAttempts = 0;
+            }
 
             print('Connected to Discord via pipe $i');
             return true;
@@ -127,13 +140,75 @@ class DiscordRPCService {
     } catch (e) {
       print('Error sending to Discord: $e');
       _isConnected = false;
+      
+      // Attempt to reconnect
+      if (!_isReconnecting && _reconnectAttempts < _maxReconnectAttempts) {
+        _attemptReconnect();
+      }
     }
+  }
+  
+  /// Attempt to reconnect to Discord
+  Future<void> _attemptReconnect() async {
+    if (_isReconnecting || _clientId == null || _reconnectAttempts >= _maxReconnectAttempts) return;
+    
+    _isReconnecting = true;
+    _reconnectAttempts++;
+    
+    print('Attempting to reconnect to Discord (attempt $_reconnectAttempts/$_maxReconnectAttempts)...');
+    
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(_reconnectDelay, () async {
+      try {
+        // Close old handle if it exists
+        if (_pipeHandle != null) {
+          try {
+            CloseHandle(_pipeHandle!);
+          } catch (e) {
+            // Ignore close errors
+          }
+          _pipeHandle = null;
+        }
+        
+        _isInitialized = false;
+        _isConnected = false;
+        
+        // Try to reconnect
+        final success = await initialize(_clientId!);
+        
+        if (success) {
+          print('Successfully reconnected to Discord!');
+          
+          // Wait a bit before restoring presence
+          await Future.delayed(const Duration(milliseconds: 500));
+          
+          // Restore previous presence if there was one
+          if (_currentGame != null && _isConnected) {
+            await updatePresence(_currentGame!);
+          }
+        } else {
+          print('Reconnection failed - attempt $_reconnectAttempts/$_maxReconnectAttempts');
+          if (_reconnectAttempts >= _maxReconnectAttempts) {
+            print('Max reconnection attempts reached. Please restart monitoring.');
+          }
+        }
+      } catch (e) {
+        print('Reconnection error: $e');
+      } finally {
+        _isReconnecting = false;
+      }
+    });
   }
 
   /// Update presence with game information
   Future<void> updatePresence(GameProfile game) async {
     if (!_isInitialized || _pipeHandle == null) {
       print('Discord RPC not initialized');
+      
+      // Try to reconnect if we have a client ID
+      if (_clientId != null && !_isReconnecting) {
+        _attemptReconnect();
+      }
       return;
     }
 
@@ -177,6 +252,7 @@ class DiscordRPCService {
       await _send(1, command);
     } catch (e) {
       print('Failed to update Discord presence: $e');
+      _isConnected = false;
     }
   }
 
@@ -203,6 +279,11 @@ class DiscordRPCService {
 
   /// Shutdown Discord RPC
   Future<void> shutdown() async {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _reconnectAttempts = 0;
+    _isReconnecting = false;
+    
     if (_pipeHandle != null) {
       try {
         await clearPresence();

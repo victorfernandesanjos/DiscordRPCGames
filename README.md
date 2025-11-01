@@ -19,30 +19,44 @@ When you manually set a custom status on Discord using their official Rich Prese
 
 ## Setup Instructions
 
-### 1. Create a Discord Application
+### Quick Start (Easiest)
+
+**The app works immediately with no setup required!** It comes with a default Discord Application ID, so you can start using it right away:
+
+1. Run the application
+2. Add your games (see step 3 below)
+3. Click **"Start Monitoring"**
+4. Launch your game and check Discord!
+
+### Advanced Setup (For Custom Icons)
+
+Want to use your own custom icons? Create your own Discord Application:
+
+#### 1. Create a Discord Application
 
 1. Go to the [Discord Developer Portal](https://discord.com/developers/applications)
 2. Click **"New Application"**
 3. Give it a name (this will appear in your Rich Presence)
 4. Click **"Create"**
-5. Copy the **Application ID** (also called Client ID) - you'll need this
+5. Copy the **Application ID** (also called Client ID)
 
-### 2. Upload Custom Images (Optional but Recommended)
+#### 2. Upload Custom Images
 
 1. In your Discord Application, go to **"Rich Presence"** → **"Art Assets"**
 2. Upload your game/app icons
 3. Give each image a name (e.g., "minecraft_icon", "game_logo")
 4. You can reference these by name in the app, or use direct URLs
 
-### 3. Install & Configure the App
+#### 3. Configure Your Client ID (Optional)
 
-1. Run the application
-2. Click the **Settings** button (gear icon)
-3. Paste your Discord **Client ID** (Application ID)
-4. Optionally enable **"Auto-start monitoring"**
-5. Click **Save**
+1. In RPC Games, click the **Settings** button (gear icon)
+2. Paste your Discord **Client ID** (Application ID)
+3. Optionally enable **"Auto-start monitoring"**
+4. Click **Save**
 
-### 4. Add Games/Applications
+**Note:** Leave the Client ID field empty to use the default (no custom icons).
+
+### 3. Add Games/Applications
 
 1. Click the **"+ Add Game"** button
 2. Fill in:
@@ -50,15 +64,23 @@ When you manually set a custom status on Discord using their official Rich Prese
    - **Process Name**: The exact .exe name (e.g., "javaw.exe")
      - Tip: Start monitoring to see a list of running processes
    - **Icon URL**: Either:
-     - The name of an asset you uploaded (e.g., "minecraft_icon")
+     - The name of an asset you uploaded in your Discord app (e.g., "minecraft_icon")
      - A direct URL to an image (e.g., "https://example.com/icon.png")
+     - Leave empty if using default client ID (no custom icons)
    - **Details**: First line of status text (optional)
    - **State**: Second line of status text (optional)
 3. Click **Add**
 
-### 5. Add Application Icon
+### 4. Start Monitoring
 
-To display your custom icon properly:
+1. Ensure Discord is running
+2. Click the **"Start"** button
+3. Launch your game/application
+4. Your custom Rich Presence should appear in Discord!
+
+### 5. Add Application Icon (Optional)
+
+To display the app icon in the system tray and taskbar:
 
 1. Create or download a 32x32 pixel icon image
 2. Convert it to `.ico` format using:
@@ -75,14 +97,7 @@ To display your custom icon properly:
 - The `windows/runner/resources/` icon is for the Windows taskbar and window title bar
 - You can copy the same icon to both locations
 
-### 6. Start Monitoring
-
-1. Ensure Discord is running
-2. Click the **"Start"** button
-3. Launch your game/application
-4. Your custom Rich Presence should appear in Discord!
-
-### 7. Background Operation
+### 6. Background Operation
 
 The app can run in the background:
 

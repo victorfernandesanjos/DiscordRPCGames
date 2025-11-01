@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../providers/app_state.dart';
 
 class SettingsDialog extends StatefulWidget {
@@ -42,7 +43,7 @@ class _SettingsDialogState extends State<SettingsDialog> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'To use this app, you need to create a Discord Application:',
+                'The app works out of the box with a default Discord Application. To use custom icons, create your own:',
                 style: TextStyle(fontSize: 14),
               ),
               const SizedBox(height: 8),
@@ -68,10 +69,10 @@ class _SettingsDialogState extends State<SettingsDialog> {
               TextField(
                 controller: _clientIdController,
                 decoration: const InputDecoration(
-                  labelText: 'Discord Client ID',
-                  hintText: 'Paste your Application ID here',
+                  labelText: 'Discord Client ID (Optional)',
+                  hintText: 'Leave empty to use default, or paste your own Application ID',
                   border: OutlineInputBorder(),
-                  helperText: 'Required to connect to Discord',
+                  helperText: 'App comes with a default Client ID. Enter yours to use custom icons.',
                 ),
               ),
               const SizedBox(height: 16),
@@ -90,40 +91,48 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 },
               ),
               const SizedBox(height: 16),
-              Card(
-                color: Colors.blue.shade50,
-                child: Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+              Builder(
+                builder: (context) {
+                  final isDark = Theme.of(context).brightness == Brightness.dark;
+                  return Card(
+                    color: isDark ? Colors.blue.shade900.withOpacity(0.3) : Colors.blue.shade50,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.info_outline, color: Colors.blue.shade700),
-                          const SizedBox(width: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.info_outline,
+                                color: isDark ? Colors.lightBlue.shade300 : Colors.blue.shade700,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Tips',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark ? Colors.lightBlue.shade300 : Colors.blue.shade700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
                           Text(
-                            'Tips',
+                            '• You can upload custom images as "Art Assets" in your Discord Application\n'
+                            '• Use the asset name (e.g., "game_icon") in the game\'s icon field\n'
+                            '• Or use a direct URL to any publicly accessible image\n'
+                            '• Make sure Discord is running before starting monitoring',
                             style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: Colors.blue.shade700,
+                              fontSize: 13,
+                              color: isDark ? Colors.lightBlue.shade100 : Colors.blue.shade900,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '• You can upload custom images as "Art Assets" in your Discord Application\n'
-                        '• Use the asset name (e.g., "game_icon") in the game\'s icon field\n'
-                        '• Or use a direct URL to any publicly accessible image\n'
-                        '• Make sure Discord is running before starting monitoring',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: Colors.blue.shade900,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
@@ -165,12 +174,22 @@ class _SettingsDialogState extends State<SettingsDialog> {
                 Text(text, style: const TextStyle(fontSize: 14)),
                 if (link != null) ...[
                   const SizedBox(height: 4),
-                  SelectableText(
-                    link,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.blue.shade700,
-                      decoration: TextDecoration.underline,
+                  InkWell(
+                    onTap: () async {
+                      final uri = Uri.parse(link);
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      }
+                    },
+                    child: Text(
+                      link,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Theme.of(context).brightness == Brightness.dark
+                            ? Colors.lightBlue.shade300
+                            : Colors.blue.shade700,
+                        decoration: TextDecoration.underline,
+                      ),
                     ),
                   ),
                 ],
@@ -185,23 +204,23 @@ class _SettingsDialogState extends State<SettingsDialog> {
   void _saveSettings() async {
     final clientId = _clientIdController.text.trim();
 
+    final appState = context.read<AppState>();
+    
+    // Allow empty client ID (will use default)
     if (clientId.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please enter a Discord Client ID'),
-          backgroundColor: Colors.red,
-        ),
-      );
-      return;
+      await appState.setClientId('');
+    } else {
+      await appState.setClientId(clientId);
     }
 
-    final appState = context.read<AppState>();
-    await appState.setClientId(clientId);
-
     if (mounted) {
+      final message = clientId.isEmpty 
+          ? 'Settings saved - using default Client ID'
+          : 'Settings saved - using your custom Client ID';
+      
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Settings saved successfully'),
+        SnackBar(
+          content: Text(message),
           backgroundColor: Colors.green,
         ),
       );
