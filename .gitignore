@@ -43,3 +43,12 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Installer output
+installer_output/
+*.exe
+*.zip
+
+# Keep installer script
+!installer.iss
+!build_release.ps1

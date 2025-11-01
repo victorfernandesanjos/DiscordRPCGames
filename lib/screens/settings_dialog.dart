@@ -111,12 +111,15 @@ class _SettingsDialogState extends State<SettingsDialog> {
                         ],
                       ),
                       const SizedBox(height: 8),
-                      const Text(
+                      Text(
                         '• You can upload custom images as "Art Assets" in your Discord Application\n'
                         '• Use the asset name (e.g., "game_icon") in the game\'s icon field\n'
                         '• Or use a direct URL to any publicly accessible image\n'
                         '• Make sure Discord is running before starting monitoring',
-                        style: TextStyle(fontSize: 13),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.blue.shade900,
+                        ),
                       ),
                     ],
                   ),
