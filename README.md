@@ -10,6 +10,8 @@ A Windows Flutter application that detects running processes and displays custom
 - 💾 **Persistent Storage**: Your game profiles are saved locally
 - 🔄 **Auto-monitoring**: Optional automatic monitoring on app startup
 - 🎯 **Discord Integration**: Direct integration with Discord via IPC (Named Pipes)
+- 🔕 **System Tray**: Runs in background - minimize to system tray, no need to keep window open
+- 🚀 **Daemon Mode**: Continues monitoring even when window is hidden
 
 ## Why Use This App?
 
@@ -54,12 +56,44 @@ When you manually set a custom status on Discord using their official Rich Prese
    - **State**: Second line of status text (optional)
 3. Click **Add**
 
-### 5. Start Monitoring
+### 5. Add Application Icon
+
+To display your custom icon properly:
+
+1. Create or download a 32x32 pixel icon image
+2. Convert it to `.ico` format using:
+   - [icoconverter.com](https://www.icoconverter.com)
+   - [convertio.co/png-ico](https://convertio.co/png-ico/)
+   - Or GIMP (free software)
+3. Save the file as `app_icon.ico` in **two locations**:
+   - `assets/app_icon.ico` - For system tray icon
+   - `windows/runner/resources/app_icon.ico` - For taskbar/window icon
+4. Rebuild the app: `flutter run -d windows`
+
+**Note:** 
+- The `assets/` icon is for the system tray
+- The `windows/runner/resources/` icon is for the Windows taskbar and window title bar
+- You can copy the same icon to both locations
+
+### 6. Start Monitoring
 
 1. Ensure Discord is running
 2. Click the **"Start"** button
 3. Launch your game/application
 4. Your custom Rich Presence should appear in Discord!
+
+### 7. Background Operation
+
+The app can run in the background:
+
+- **Close window (X)**: Minimizes to system tray (doesn't quit)
+- **System tray icon**: Look for it in the bottom-right corner (near clock)
+- **Click tray icon**: Opens the main window
+- **Right-click tray menu**:
+  - **Show Window** - Restore the main window
+  - **Quit** - Completely exit the application
+
+The app continues monitoring processes and updating Discord even when the window is hidden!
 
 ## Building from Source
 
@@ -99,6 +133,13 @@ The executable will be in `build\windows\x64\runner\Release\`
 - If using URLs, ensure the image is publicly accessible
 - If using Discord assets, verify the asset name is correct (case-sensitive)
 - Try uploading the image again in the Discord Developer Portal
+
+### "System tray icon not visible"
+- Make sure you added `app_icon.ico` to the `assets/` folder
+- Rebuild the app after adding the icon
+- Check Windows taskbar settings: Settings → Personalization → Taskbar
+- Look in the overflow area (click the ^ arrow in system tray)
+- The app still works without the icon - you just won't see it in the tray
 
 ## License
 
